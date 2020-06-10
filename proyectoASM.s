@@ -80,7 +80,7 @@ miMain: // X0 pixels
 		str     x4,[sp, 8]
 		str     x5,[sp, 0]
 		
-		mov	x2,	#0    //Start counter in 0
+		mov	x2,#0    //Start counter in 0
 
 		pintar_pantalla_color_loop:
 
@@ -122,7 +122,7 @@ miMain: // X0 pixels
 		
 
 		movz    x4, #1280	// 320 x 4= obtengo los bytes de una fila
-		mul     x2, x2, x4  	//x2	=10*(1280) = me posiciono en la fila que coloco la imagen
+		mul     x2, x2, x4  	//x2=10*(1280) = me posiciono en la fila que coloco la imagen
 		add	x0,x0,x2	//me posiciono en la fila de abajo
 		lsl     x3, x3, #2  	// x3=oxfff0 
 		add     x0, x0, x3  	// x0=me posicion en la columna y fila de la pantalla a donde voy a dibujar (add x0, x2, lsl x3,x3,#2)
@@ -131,12 +131,12 @@ miMain: // X0 pixels
 		ldr     x2, [x1, #0]    // x2 Ancho de mi imagen
 		ldr     x3, [x1, #8]    // x3 Alto de mi imagen
 
-		//mov	x24,#200
+		mov	x24,#200	//HASTA LA COLUMNA 50
 		
 		add     x1, x1, #16	//actualizo mi puntareo de arreglo de mi imagen ya que ya no necesito obtener el ancho y el alto
-		//
+		
 		mov	x25,x1		//HICE UNA COPIA DE LA DIRECCION INICIAL DE DONDE INICIO A PINTAR
-		//	
+			
 		mov	x4, #0		// Cont Filas de imagen
 		mov	x5, #0		// Cont Columnas de imagen
 
@@ -148,23 +148,19 @@ miMain: // X0 pixels
 		add     x1, x1, #4      	// Muevo direccion del pixel de imagen
 		add     x5, x5, #1      	// Incremento en uno la columna
 		
-		//cmp	x5,x24
-		cmp     x5, x2			//comparto el ancho de la imagen con la columna en que estoy pintando
+		cmp	x5,x24
+		//cmp     x5, x2			//comparto el ancho de la imagen con la columna en que estoy pintando
 		b.lt    draw_image_loop  	// me aseguro de no desbordar y pasar a la fila de abajo de mi pantalla a donde dibujo
 		
 		
 		mov	x5, #0		// setear contador columna 
 		
-		
-
-		
-
 		add     x0, x0, #1280	// Paso al pinxers que tengo que pintar(osea me desplazo una fila hacia abajo)
 		lsl     x6, x2, #2	//x6= obtengo el ancho de mi imagen en byte
 		sub     x0, x0, x6	// ancho de pantalla -ancho de mi imagen= 1 columna de la fila de abajo
 
 		add	x25,x25,#1220	//avanzo en filas de mi puntero de mi imagen
-		//mov	x1,x25		//actualizo el punto de mi imagen
+		mov	x1,x25		//actualizo el punto de mi imagen
 		
 		add     x4, x4, #1	// Aumento mi contador de fila
 		cmp     x4, x3 		// verifico si me mi contador de fila es igual al tamaño de la fila de mi imagen
