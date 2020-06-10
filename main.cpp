@@ -1,7 +1,6 @@
 #include <iostream>
 #include <SDL.h>
 #include <thread>
-#include "imagenes.h"
 
 typedef struct {
     uint8_t izq;       // 0
@@ -15,9 +14,9 @@ typedef struct {
     uint8_t frame;     // 8
 } st_control;
 
-#include "test.h"
+//#include "test.h"
 
-//extern "C" void miMain(uint32_t *pixels, st_control *c);
+extern "C" void miMain(uint32_t *pixels, st_control *c);
 
 const unsigned int width = 320;
 const unsigned int height = 240;
@@ -42,7 +41,7 @@ int main() {
 
     memset(pixels, 255, width * height * sizeof(Uint32));
 
-    std::thread th1(miMain, pixels, &cont);//ejecuto el codigo en assembler por el hilo (Archivo proyectoASM.s)
+    std::thread th1(miMain, pixels, &cont);
     th1.detach();
 
     //Get the current clock time

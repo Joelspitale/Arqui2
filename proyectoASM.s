@@ -3,42 +3,191 @@
 .global miMain
 .type miMain, %function
 .extern printf
-.extern nave
-
-
-
+//.extern convertida
 
 miMain: // X0 pixels
-		mov		x10, X0			//  BackUp pixels address (xo tiene la direccion de memoria del arreglo de pixeles)
-		mov		x15, X1			//  BackUp config
+		mov	x10, x0	     	//  BackUp pixels address
+		mov	x15, x1	     	//  BackUp config
 
-		mov		x11,	#0			//	Start counter in 0
+      	        mov x11, 0x07f		//la columna en la que empiezo por defecto
+       		mov x12, 0xfff		
+	
+		mov x8, 120		// la fila en la que empiezo por defecto
+		//mov x9,0		//COLOCO EL CONTADOR DEL MARCO
+	loop2:	
+		//  Pinto pantalla de color
+		mov     x0, x10
+		movz    w1,0xffff
+		movk	w1, 0xffff, lsl 16	// w1 = color = 0xff000000
+      		bl      pintar_pantalla_color
+
+
+		// Dibujo Imagen x2->fila, x3->columna
+		mov     x0, x10      	       // Direccion del arreglo de la ventana 320x240
+        	adrp	x1, aparision	       //Variable megaman
+		add	x1, x1, :lo12:aparision
+		mov     x3, x11		       //x3=0xfff (columna fff)
+		mov 	x2,x8	      	       //inicia a dibujar en la fila x2
+		//mov 	x4,x9		       //PASO EL CONTADOR COMO PARAMETRO	
+		bl      draw_image	       //aca le pase desde que posicion del arregl quiero que inicio a dibujar mi megaman
+
 		
-		movz	w2, 0x0aa0			// Muevo la parte alta  de la direccion a_w2
-		movk	w2, 0xffff, lsl 16	// X2 = color
-		// w2 = 0xffff0aa0
+		ldrb	w7, [x15, #0] // w7=1 implica que pulso la tecla de flecha para la izquierda
+		subs	wzr, w7, #1   // verifico si la pulso
+       	 	b.ne	ver_der		
+		sub     x11, x11 ,#16
+		b        wait
+	
+		ver_der:
+        	ldrb	w7, [x15, #1] //w7=1 implica que pulso la tecla de la flecha para la derecha
+		subs	wzr, w7, #1
+       		b.ne	ver_arriba		
+		add     x11,x11,#16
 
-loop2:
-		add		w2, w2, #1
+		ver_arriba:
+		ldrb	w7, [x15, #2] //w7=1 implica que pulso la tecla de la flecha para la derecha
+		subs	wzr, w7, #1
+       		b.ne	ver_abajo
+		sub 	x8,x8,#4		
+		sub     x2,x2,x8
 
-		lsl		X1, X11, #2		// *4 pixels
+		ver_abajo:
+		ldrb	w7, [x15, #3] //w7=1 implica que pulso la tecla de la flecha para la derecha
+		subs	wzr, w7, #1
+       		b.ne	wait	
+		add 	x8,x8,#4
+		add     x2,x2,x8
 
-		mov		X0, X10			// X0 = pixels
-		add		X0, X0, X1
-		str		W2, [x0, #0]
 
-		add		X11, X11, #1
-		movz	X3,	0x2C00
-		movk	X3, 0x1, lsl 16
-		cmp		X11, X3
-		b.lt	loop2
-		mov		x11,	#0
 
-wait: 	//wait for frame
+		wait: 	// wait for frame
 
-        ldrb	w7, [x15, #8]
-		ands	w7,w7,#1
-        b.ne	wait
-		mov		w7, #0
+   	        ldrb	w7, [x15, #8]
+		subs	wzr, w7, #1
+                b.ne	wait
+
+		mov     w7, #0
 		strb	w7,[x15, #8]
-		b		loop2
+		b	loop2
+		
+		
+	pintar_pantalla_color:
+		sub     sp, sp ,48
+		str     x29,[sp, 40]
+		str     x30,[sp, 32]
+		str     x2,[sp, 24]
+		str     x3,[sp, 16]
+		str     x4,[sp, 8]
+		str     x5,[sp, 0]
+		
+		mov	x2,	#0    //Start counter in 0
+
+		pintar_pantalla_color_loop:
+
+		add	x3, x0, x2     //x3=posicion en el arreglo de la pantalla expresada en byte
+		str	w1, [x3, #0]   // guardo el color en la posicion del arreglo de x3(regordemos que guardo de a word(4 byte))
+		add	x2, x2, #4     // le sumo 4 para ir al siguiente pixel
+		movz	x4,0xB000      // 0x4b000 es el final de la posicion del vector de pixels de mi ventana
+		movk	x4, 0x4, lsl 16
+		cmp	x2, x4
+		b.lt	pintar_pantalla_color_loop
+		
+       		ldr     x5,[sp, 0]
+        	ldr     x4,[sp, 8]
+        	ldr     x3,[sp, 16]
+        	ldr     x2,[sp, 24]
+        	ldr     x30,[sp, 32]
+        	ldr     x29,[sp, 40]
+       		add     sp, sp ,48
+		ret
+
+	draw_image:
+		sub     sp, sp ,48
+		str     x29,[sp, 40]
+		str     x30,[sp, 32]
+		str     x4,[sp, 24]
+		str     x5,[sp, 16]
+		str     x6,[sp, 8]
+		str     x7,[sp, 0]
+		
+		/*
+		// Mover puntero de pantalla al primer pixel donde debe ir la imagen.(lo puedo optimizar)
+		mov	x7,x4		//MUEVO EL CONTADOR DE MARCOS A X7
+		adrp	x14, memoria_aux	       //USO VARIABLE AUX
+		add	x14, x14, :lo12:memoria_aux    //USO VARIABLE AUX
+		str	x17,[x14,#0]	//OBTENGO EL DESDE QUE COLUMNA TENGO QUE PINTAR
+		mov	x18, #50
+		add	x18,x15,x17	//OBTENGO EL HASTA QUE COLUMNA TENGO QUE PINTAR
+		*/
+		
+
+		movz    x4, #1280	// 320 x 4= obtengo los bytes de una fila
+		mul     x2, x2, x4  	//x2	=10*(1280) = me posiciono en la fila que coloco la imagen
+		add	x0,x0,x2	//me posiciono en la fila de abajo
+		lsl     x3, x3, #2  	// x3=oxfff0 
+		add     x0, x0, x3  	// x0=me posicion en la columna y fila de la pantalla a donde voy a dibujar (add x0, x2, lsl x3,x3,#2)
+				    	
+
+		ldr     x2, [x1, #0]    // x2 Ancho de mi imagen
+		ldr     x3, [x1, #8]    // x3 Alto de mi imagen
+
+		//mov	x24,#200
+		
+		add     x1, x1, #16	//actualizo mi puntareo de arreglo de mi imagen ya que ya no necesito obtener el ancho y el alto
+		//
+		mov	x25,x1		//HICE UNA COPIA DE LA DIRECCION INICIAL DE DONDE INICIO A PINTAR
+		//	
+		mov	x4, #0		// Cont Filas de imagen
+		mov	x5, #0		// Cont Columnas de imagen
+
+	 draw_image_loop:
+
+		ldr     w6, [x1,#0]		// cargo los 4 bytes direcctamente
+		str	w6, [x0, #0]		// dibujo el pixeles de mi imagen en la ventana
+		add     x0, x0, #4      	// Muevo direccion del pixel de pantalla
+		add     x1, x1, #4      	// Muevo direccion del pixel de imagen
+		add     x5, x5, #1      	// Incremento en uno la columna
+		
+		//cmp	x5,x24
+		cmp     x5, x2			//comparto el ancho de la imagen con la columna en que estoy pintando
+		b.lt    draw_image_loop  	// me aseguro de no desbordar y pasar a la fila de abajo de mi pantalla a donde dibujo
+		
+		
+		mov	x5, #0		// setear contador columna 
+		
+		
+
+		
+
+		add     x0, x0, #1280	// Paso al pinxers que tengo que pintar(osea me desplazo una fila hacia abajo)
+		lsl     x6, x2, #2	//x6= obtengo el ancho de mi imagen en byte
+		sub     x0, x0, x6	// ancho de pantalla -ancho de mi imagen= 1 columna de la fila de abajo
+
+		add	x25,x25,#1220	//avanzo en filas de mi puntero de mi imagen
+		//mov	x1,x25		//actualizo el punto de mi imagen
+		
+		add     x4, x4, #1	// Aumento mi contador de fila
+		cmp     x4, x3 		// verifico si me mi contador de fila es igual al tamaño de la fila de mi imagen
+		b.lt    draw_image_loop   // dibujo la fila en la que estoy 
+		
+		//ACA TENGO QUE GUARDAR EN memoria_aux el desde y hasta de lo que pinte ahora
+
+		ldr     x7,[sp, 0]
+		ldr     x6,[sp, 8]
+		ldr     x5,[sp, 16]
+		ldr     x4,[sp, 24]
+		ldr     x30,[sp, 32]
+		ldr     x29,[sp, 40]
+		add     sp, sp ,48
+		ret
+
+memoria_aux:
+    .xword   0  // desde_ancho 
+    .xword   20  // hasta_ancho
+
+
+
+
+
+		
+
