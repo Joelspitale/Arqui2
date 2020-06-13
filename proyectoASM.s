@@ -33,15 +33,13 @@ miMain: // X0 pixels
 		add	x1, x1, :lo12:Sprite_completo
 		mov     x3, x11		       		//x3=0xfff (columna fff)
 		mov 	x2,x8	      	      		//inicia a dibujar en la fila x2, (me sobre el x4 para pasar)
-		subs  xzr,x16,#0
+		subs  	xzr,x16,#0
 		bne	botones
-		//subs	xzr,x5,#5
-		//b.eq	aparicion		//OBLIGO A QUE SE PRODUZCA LA REPETICION, OSEA INCREMENTO X5
-		//bne	aparicion
+
 		cmp	x5,#5
 		b.le	aparicion
-		
-		mov	x5,#5				//lo obligo a que sino apreta nada y despues de finalizar la aparicion a 			b	aparicion				//esperar		
+		mov	x5,#5
+		b	aparicion
 		botones:
 
 		subs	xzr,x16,#10
