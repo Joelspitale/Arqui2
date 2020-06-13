@@ -6,13 +6,14 @@
 //.extern convertida
 
 miMain: // X0 pixels
+		mov 	x16,#0
 		mov 	x6,#0
 		mov	x5,#0		//x5 contador de columnas
 		mov	x4,#0		//x4 contador de fila
 		mov	x10, x0	     	//  BackUp pixels address
 		mov	x15, x1	     	//  BackUp config
 
-      	        mov x11, 0x07f		//la columna en la que empiezo por defecto
+      	        mov x11, 0x07f 		//la columna en la que empiezo por defecto
        		mov x12, 0xfff		
 	
 		mov x8,#120		// la fila en la que empiezo por defecto
@@ -32,17 +33,34 @@ miMain: // X0 pixels
 		add	x1, x1, :lo12:Sprite_completo
 		mov     x3, x11		       		//x3=0xfff (columna fff)
 		mov 	x2,x8	      	      		//inicia a dibujar en la fila x2, (me sobre el x4 para pasar)
-		subs	xzr,x5,#10
-		b.eq	aparicion
-		add	x5,x5,#1			//avanzo hacia la siguiente imagen
+		subs  xzr,x16,#0
+		bne	botones
+		//subs	xzr,x5,#5
+		//b.eq	aparicion		//OBLIGO A QUE SE PRODUZCA LA REPETICION, OSEA INCREMENTO X5
+		//bne	aparicion
+		cmp	x5,#5
+		b.le	aparicion
+		
+		mov	x5,#5				//lo obligo a que sino apreta nada y despues de finalizar la aparicion a 			b	aparicion				//esperar		
+		botones:
+
+		subs	xzr,x16,#10
+		bne	volver_fila
+		mov	x16,#0
+		volver_fila:
+		mov	x5,x16		
 		aparicion:
 		bl	draw_image
+		add	x5,x5,#1		//avanzo hacia la siguiente imagen de  la misma fila
+				
 		
-		
+		//me muevo hacia la izquierda
 		ldrb	w7, [x15, #0] // w7=1 implica que pulso la tecla de flecha para la izquierda
 		subs	wzr, w7, #1   // verifico si la pulso
        	 	b.ne	ver_der		
 		sub     x11, x11 ,#16
+		mov	x4,#5		//hago que me busque la fila #5
+		add	x16,x16,#1
 		b        wait
 	
 		ver_der:
@@ -51,20 +69,24 @@ miMain: // X0 pixels
        		b.ne	ver_arriba		
 		add     x11,x11,#16
 		mov	x4,#3		//hago que me busque la fila #3
-		mov	x5,#0
+		add	x16,x16,#1
 
-		ver_arriba:
+		ver_arriba://salta hacia la derecha
 		ldrb	w7, [x15, #2] //w7=1 implica que pulso la tecla de la flecha para la derecha
 		subs	wzr, w7, #1
        		b.ne	ver_abajo
-		sub 	x8,x8,#4		
+		sub 	x8,x8,#4
+		mov	x4,#7		//hago que me busque la fila #3
+		add	x16,x16,#1		
 		sub     x2,x2,x8
 
-		ver_abajo:
+		ver_abajo://dispara hacia la derecha
 		ldrb	w7, [x15, #3] //w7=1 implica que pulso la tecla de la flecha para la derecha
 		subs	wzr, w7, #1
        		b.ne	wait	
 		add 	x8,x8,#4
+		mov	x4,#4		//hago que me busque la fila #3
+		add	x16,x16,#1
 		add     x2,x2,x8
 
 
@@ -77,7 +99,6 @@ miMain: // X0 pixels
 
 		mov     w7, #0
 		strb	w7,[x15, #8]
-		add	x9,x9,#1		//seteo para que me aparezca una sola vez
 		b	loop2
 		
 		
