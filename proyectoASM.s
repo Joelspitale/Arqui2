@@ -21,8 +21,10 @@ miMain: // X0 pixels
 	loop2:	
 		//  Pinto pantalla de color
 		mov     x0, x10
-		movz    w1,0xffff
-		movk	w1, 0xffff, lsl 16	// w1 = color = 0xffffffff
+		//movz    w1,0xffff
+		//movk	w1, 0xffff, lsl 16	// w1 = color = 0xffffffff
+		adrp	x1, Contorno	        //Variable megaman
+		add	x1, x1, :lo12:Contorno
       		bl      pintar_pantalla_color
 
 
@@ -59,7 +61,7 @@ miMain: // X0 pixels
 		sub     x11, x11 ,#16
 		mov	x4,#5		//hago que me busque la fila #5
 		add	x16,x16,#1
-		b        wait
+		b       wait
 	
 		ver_der:
         	ldrb	w7, [x15, #1] //w7=1 implica que pulso la tecla de la flecha para la derecha
@@ -113,10 +115,12 @@ miMain: // X0 pixels
 
 		pintar_pantalla_color_loop:
 
-		add	x3, x0, x2     //x3=posicion en el arreglo de la pantalla expresada en byte
-		str	w1, [x3, #0]   // guardo el color en la posicion del arreglo de x3(regordemos que guardo de a word(4 byte))
-		add	x2, x2, #4     // le sumo 4 para ir al siguiente pixel
-		movz	x4,0xB000      // 0x4b000 es el final de la posicion del vector de pixels de mi ventana
+		add	x3, x0, x2      //x3=posicion en el arreglo de la pantalla expresada en byte
+		add	x25,x1,x2
+		ldr	w5,[x25,#0]	//AGREGADO
+		str	w5,[x3,#0]	//AGREGADO
+		add	x2,x2,#4        // le sumo 4 para ir al siguiente pixel
+		movz	x4,0xB000       // 0x4b000 es el final de la posicion del vector de pixels de mi ventana
 		movk	x4, 0x4, lsl 16
 		cmp	x2, x4
 		b.lt	pintar_pantalla_color_loop
@@ -146,7 +150,7 @@ miMain: // X0 pixels
 		// x5=contador_colum,x4=contador_fila 
 		
 		mov 	x21,#192	
-		mov	x17,#225
+		mov	x17,#225			//LO TENGO QUE CAMBIAR YA QUE 
 		mov	x18,#9
 		lsl	x17,x17,x18	
 		mul	x17,x17,x4	//obtengo la fila de mi imagen
