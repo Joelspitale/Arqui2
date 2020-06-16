@@ -7,6 +7,7 @@
 
 miMain: // X0 pixels
 		mov 	x16,#0
+		mov	x13,#0		//bandera bala
 		mov 	x6,#0
 		mov	x5,#0		//x5 contador de columnas
 		mov	x4,#0		//x4 contador de fila
@@ -35,6 +36,9 @@ miMain: // X0 pixels
 		add	x1, x1, :lo12:last
 		mov     x3, x11		       		//x3=0xfff (columna fff)
 		mov 	x2,x8	      	      		//inicia a dibujar en la fila x2
+		//*********
+		mov	x26,x2		
+		//*********
 		subs  	xzr,x16,#0		//si x16 es diferente de cero implica que alguien apreto un boton
 		bne	botones
 
@@ -52,6 +56,19 @@ miMain: // X0 pixels
 		aparicion:
 		bl	draw_image
 		add	x5,x5,#1		//avanzo hacia la siguiente imagen de  la misma fila
+		
+		//*****************************************************************
+		
+		subs	xzr,x13,#0
+		beq	no_disparo
+		adrp	x1, bala	        	//Variable megaman
+		add	x1, x1, :lo12:bala
+		mov     x3, x14		       		//x3=columna anterior
+		mov	x2,x26
+		
+		bl	dibujar_bala
+		no_disparo:
+		//*****************************************************************
 				
 		
 		//me muevo hacia la izquierda
@@ -85,23 +102,45 @@ miMain: // X0 pixels
 		ver_abajo://dispara hacia la derecha
 		ldrb	w7, [x15, #3] //w7=1 implica que pulso la tecla de la flecha para la derecha
 		subs	wzr, w7, #1
-       		b.ne	dormir	
+       		//b.ne	dormir
+		b.ne	barra_espacio	
 		add 	x8,x8,#4
 		mov	x4,#7		//hago que me busque la fila #3
 		add	x16,x16,#1
 		add     x2,x2,x8
-		
 		b	wait
+
+
+		barra_espacio:
+		ldrb	w7, [x15, #7] //w7=1 implica que pulso la tecla de la flecha para la derecha
+		subs	wzr, w7, #1
+       		b.ne	dormir
+		mov	x4,#4		//Faltaria hacer una imagen donde este parado y disparando
+		add	x6,x16,#1	//no falta aumentar el x11 ya que no me desplazo en la pantalla
+		
+		//*****************************************************************
+
+		add	x13,x13,#1		//bandera para que aparezca la bala
+		//cmp	x13,#2
+		//b.lt	disminuir_columna
+		//subs	xzr,x13,#1
+		//bne	disminuir_columna		
+		//sub	x14,x11,#48
+		//mov	x14,x11
+		//cada estoy haciendo que cada vez que aprete la bala se mueva
+		//disminuir_columna:
+		//sub	x14,x14,#16
+		mov	x14,x11
+		
+
+		//*****************************************************************
 		
 		dormir://sino apreta ninguna tecla entonces esta durmiendo
 		mov	x16,#0
 		cmp	x5,#9
 		b.lt	wait
-		mov	x4,#1
+		mov	x4,#2
 		
-
-		
-
 		wait: 	// wait for frame
 
    	        ldrb	w7, [x15, #8]
@@ -182,10 +221,6 @@ miMain: // X0 pixels
 		sub	x2,x2,#4
 		sub 	x8,x8,#4
 
-
-
-
-		
 		
 		//verifico que no me paso de las columnas limitrofes
 		//de derecha a izquierda
@@ -228,12 +263,6 @@ miMain: // X0 pixels
 		//udiv	x4, x3, x13		//x4=x3/272
 		//msub	x24, x4, x13, x3	//x24=x3%272
 		
-
-
-
-
-
-		
 		ldr     x2, [x1, #0]    // x2 Ancho de mi imagen ->x2=300, no me sirve mucho el ancho
 		ldr     x3, [x1, #8]    // x3 Alto de mi imagen
 		mov	x3,#60		//TENGO QUE ARRGLAR MI ANCHO
@@ -241,13 +270,11 @@ miMain: // X0 pixels
 		mov	x24,#48		//HASTA LA COLUMNA 48
 		add     x1, x1, #16	//actualizo mi puntareo de arreglo de mi imagen ya que ya no necesito obtener el ancho y el alto
 		
-
 		mov 	x22,x0
 		mov	x20,x1		//lo guardo para conservar la inicio del arreglo de mi imagen
 		add	x1,x1,x21	// me posiciono en los pixel del marco al cual voy(agregue)
 		mov	x25,x1		//HICE UNA COPIA DE LA DIRECCION INICIAL DE DONDE INICIO A PINTAR
 		
-			
 		mov	x4, #0		// Cont Filas de imagen
 		mov	x5, #0		// Cont Columnas de imagen
 
@@ -269,7 +296,6 @@ miMain: // X0 pixels
 		
 		cmp	x5,x24
 		b.lt    draw_image_loop  	// me aseguro de no desbordar y pasar a la fila de abajo de mi pantalla a donde dibujo
-		
 		
 		mov	x5, #0		// setear contador columna 
 		
@@ -298,6 +324,87 @@ miMain: // X0 pixels
 		ldr     x29,[sp, 40]
 		add     sp, sp ,48
 		ret
+
+
+//falta cambiar todas las etiquetas
+
+
+		dibujar_bala:
+		sub     sp, sp ,48
+		str     x29,[sp, 40]
+		str     x30,[sp, 32]
+		str     x4,[sp, 24]
+		str     x5,[sp, 16]
+		str     x6,[sp, 8]
+		str     x7,[sp, 0]
+		
+
+		//actualizar el puntero de mi ventana
+		//movz    x4, #1280	// 320 x 4= obtengo los bytes de una fila
+		//mul     x2, x2, x4  	//x2=numero de fila *(1280) = me posiciono en la fila que coloco la imagen
+		//add	x0, x0, x2	//me posiciono en la fila de abajo
+		//lsl     x3, x3, #2  	// x3=oxfff0 
+		//add     x0, x0, x3  	// x0=me posicion en la columna y fila de la pantalla a donde voy a dibujar (add x0, x2, lsl x3,x3,#2)
+		
+		subs	x0,x0,#192	//coloco la bala un marco antes
+		
+	
+		ldr     x2, [x1, #0]    // x2 Ancho de mi imagen ->x2=48, no me sirve mucho el ancho
+		ldr     x3, [x1, #8]    // x3 Alto de mi imagen	   x3=60
+		add     x1, x1, #16	//actualizo mi puntareo de arreglo de mi imagen ya que ya no necesito obtener el ancho y el alto
+
+
+		mov	x4, #0		// Cont Filas de imagen
+		mov	x5, #0		// Cont Columnas de imagen
+
+		mov	x22,x0
+		mov	x20,x1
+		
+		
+	 dibujar_fila_bala:
+		
+		
+		ldr     w6, [x1,#0]		// cargo los 4 bytes directamente
+		lsr     w7, w6, #24       	// 0xff aabbcc
+        	cmp     w7, 0xff          	//  ( Red * A + Pix *(256-A) ) / 256
+        	b.lt    no_dibujar_contorno_bala
+		str	w6, [x0, #0]		// dibujo el pixeles de mi imagen en la ventana
+		no_dibujar_contorno_bala:
+
+			
+		add     x0, x0, #4      	// Muevo direccion del pixel de pantalla
+		add     x1, x1, #4      	// Muevo direccion del pixel de imagen
+		add     x5, x5, #1      	// Incremento en uno la columna
+		
+		cmp	x5,x2
+		b.lt    dibujar_fila_bala  	// me aseguro de no desbordar y pasar a la fila de abajo de mi pantalla a donde dibujo
+		
+		mov	x5, #0		// setear contador columna 
+		
+		add     x0, x0, #1280	// Paso al pinxers que tengo que pintar(osea me desplazo una fila hacia abajo)
+		lsl     x6, x2, #2	//x6= obtengo el ancho del marco mio de mi imagen en byte
+		sub     x0, x0, x6	// ancho de pantalla -ancho de mi imagen= 1 columna de la fila de abajo
+
+		
+		add     x4, x4, #1		// Aumento mi contador de fila
+		cmp     x4, x3 			// verifico si me mi contador de fila es igual al tamaño de la fila de mi imagen
+		b.lt    dibujar_fila_bala 	// dibujo la fila en la que estoy 
+
+
+		mov	x0,x22
+		mov	x1,x20
+
+
+
+		ldr     x7,[sp, 0]
+		ldr     x6,[sp, 8]
+		ldr     x5,[sp, 16]
+		ldr     x4,[sp, 24]
+		ldr     x30,[sp, 32]
+		ldr     x29,[sp, 40]
+		add     sp, sp ,48
+		ret
+		
 
 memoria_aux:
     .xword   0  // desde_ancho 

@@ -12,6 +12,6 @@ set(CMAKE_CXX_STANDARD 17)
 
 #set_source_files_properties(parcial.s PROPERTIES COMPILE_FLAGS "-x assembler-with-cpp")
 
-add_executable(proyectoASM main.cpp proyectoASM.s Sprite_completo.s Contorno.s)
+add_executable(proyectoASM main.cpp proyectoASM.s last.s Contorno.s bala.s)
 
 target_link_libraries(proyectoASM ${SDL2_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} SDL2::SDL2 stdc++ m)
