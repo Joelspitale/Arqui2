@@ -31,16 +31,16 @@ miMain: // X0 pixels
 		// Parametros:(x0-> ptr ventana,x1->ptr sprite,x2->direccion de ventana donde se dibuja mi spite, x3->eq x2 pero con columna
 		//		x4->inicio de ancho, x5->contador de marco, x6-> contador de imagenes
 		mov     x0, x10      	       		// Direccion del arreglo de la ventana 320x240
-        	adrp	x1, Sprite_completo	        //Variable megaman
-		add	x1, x1, :lo12:Sprite_completo
+        	adrp	x1, last	        	//Variable megaman
+		add	x1, x1, :lo12:last
 		mov     x3, x11		       		//x3=0xfff (columna fff)
-		mov 	x2,x8	      	      		//inicia a dibujar en la fila x2, (me sobre el x4 para pasar)
-		subs  	xzr,x16,#0
+		mov 	x2,x8	      	      		//inicia a dibujar en la fila x2
+		subs  	xzr,x16,#0		//si x16 es diferente de cero implica que alguien apreto un boton
 		bne	botones
 
-		cmp	x5,#5
+		cmp	x5,#9
 		b.le	aparicion
-		mov	x5,#5
+		mov	x5,#0			//si le coloco 9 implica que voy a tener esprando el cuadro 9
 		b	aparicion
 		botones:
 
@@ -48,7 +48,7 @@ miMain: // X0 pixels
 		bne	volver_fila
 		mov	x16,#0
 		volver_fila:
-		mov	x5,x16		
+		mov	x5,x16			//numero de imagen	
 		aparicion:
 		bl	draw_image
 		add	x5,x5,#1		//avanzo hacia la siguiente imagen de  la misma fila
@@ -59,7 +59,7 @@ miMain: // X0 pixels
 		subs	wzr, w7, #1   // verifico si la pulso
        	 	b.ne	ver_der		
 		sub     x11, x11 ,#16
-		mov	x4,#5		//hago que me busque la fila #5
+		mov	x4,#4		//hago que me busque la fila #5
 		add	x16,x16,#1
 		b       wait
 	
@@ -70,26 +70,37 @@ miMain: // X0 pixels
 		add     x11,x11,#16
 		mov	x4,#3		//hago que me busque la fila #3
 		add	x16,x16,#1
+		b       wait
 
 		ver_arriba://salta hacia la derecha
 		ldrb	w7, [x15, #2] //w7=1 implica que pulso la tecla de la flecha para la derecha
 		subs	wzr, w7, #1
        		b.ne	ver_abajo
 		sub 	x8,x8,#4
-		mov	x4,#7		//hago que me busque la fila #3
+		mov	x4,#6		//hago que me busque la fila #3
 		add	x16,x16,#1		
 		sub     x2,x2,x8
+		b       wait
 
 		ver_abajo://dispara hacia la derecha
 		ldrb	w7, [x15, #3] //w7=1 implica que pulso la tecla de la flecha para la derecha
 		subs	wzr, w7, #1
-       		b.ne	wait	
+       		b.ne	dormir	
 		add 	x8,x8,#4
-		mov	x4,#4		//hago que me busque la fila #3
+		mov	x4,#7		//hago que me busque la fila #3
 		add	x16,x16,#1
 		add     x2,x2,x8
+		
+		b	wait
+		
+		dormir://sino apreta ninguna tecla entonces esta durmiendo
+		mov	x16,#0
+		cmp	x5,#9
+		b.lt	wait
+		mov	x4,#1
+		
 
-
+		
 
 		wait: 	// wait for frame
 
@@ -134,7 +145,7 @@ miMain: // X0 pixels
        		add     sp, sp ,48
 		ret
 
-		// Parametros:(x0-> ptr ventana,x1->ptr sprite,x2->direccion de ventana donde se dibuja mi spite, x3->eq x2 pero con columna
+		// Parametros:(x0-> ptr ventana,x1->ptr sprite,x2->contador de filas a multipicar, x3->eq x2 pero con columna
 		//		x4->inicio de ancho, x5->contador de marco, x6-> contador de imagenes
 
 	draw_image:
@@ -156,7 +167,55 @@ miMain: // X0 pixels
 		mul	x17,x17,x4	//obtengo la fila de mi imagen
 		mul     x21,x21,x5	//obtengo mi nuevo ancho
 		add	x21,x21,x17	//(ancho*contador_columna+filas_de_col*contador_filas)
+
+		//verificar que no me paso de arriba
+		cmp	x2,#0		
+		b.gt	no_pasar_de_abajo
+		add	x2,x2,#4
+		add 	x8,x8,#4
+		b	ver_costados
 		
+		no_pasar_de_abajo:
+		
+		cmp	x2,#170
+		b.lt	ver_costados
+		sub	x2,x2,#4
+		sub 	x8,x8,#4
+
+
+
+
+		
+		
+		//verifico que no me paso de las columnas limitrofes
+		//de derecha a izquierda
+		
+		//ALTERNATIVA
+		//udiv	x4, x3, x13		//x4=x3/272 -> TENGO QUE HACER X13=271
+		//msub	x24, x4, x13, x3	//x24=x3%272
+		//subs	xzr,x24,#0
+		//bne	no_pasar_por_izq
+		
+
+		ver_costados:
+		cmp	x3,#271
+		b.lt	no_pasar_por_izq
+
+		sub	x11,x11,#16
+		sub	x3,x3,#16 			//AGREGADDOOOOOOOOOO
+		
+		b	no_pasar
+		
+		no_pasar_por_izq:
+
+		cmp	x3,#1
+		b.gt	no_pasar
+		
+		add	x11,x11,#16
+		add	x3,x3,#16 			//AGREGADDOOOOOOOOOO
+		
+		
+		no_pasar:
 
 		//actualizar el puntero de mi ventana
 		movz    x4, #1280	// 320 x 4= obtengo los bytes de una fila
@@ -164,7 +223,16 @@ miMain: // X0 pixels
 		add	x0, x0, x2	//me posiciono en la fila de abajo
 		lsl     x3, x3, #2  	// x3=oxfff0 
 		add     x0, x0, x3  	// x0=me posicion en la columna y fila de la pantalla a donde voy a dibujar (add x0, x2, lsl x3,x3,#2)
-				    	
+
+
+		//udiv	x4, x3, x13		//x4=x3/272
+		//msub	x24, x4, x13, x3	//x24=x3%272
+		
+
+
+
+
+
 		
 		ldr     x2, [x1, #0]    // x2 Ancho de mi imagen ->x2=300, no me sirve mucho el ancho
 		ldr     x3, [x1, #8]    // x3 Alto de mi imagen
