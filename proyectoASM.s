@@ -7,6 +7,7 @@
 
 miMain: // X0 pixels	
 		mov	x14,#0
+		mov	x12,#0
 		mov 	x16,#0
 		mov	x13,#0		//bandera bala
 		mov 	x6,#0
@@ -16,7 +17,7 @@ miMain: // X0 pixels
 		mov	x15, x1	     	//  BackUp config
 
       	        mov x11, 0x07f 		//la columna en la que empiezo por defecto
-       		//mov x12, 0xfff		
+       				
 	
 		mov x8,#120		// la fila en la que empiezo por defecto
 		mov x9,#1		//COLOCO EL CONTADOR DEL MARCO
@@ -166,10 +167,13 @@ miMain: // X0 pixels
 	
 
 		//dibujar villano
-		
+		mov	x4,#8	
+		subs	xzr,x12,#1
+		bne	morir
+		mov	x4,#9
+		morir:
 		mov     x3,#3		       		//x3=0x000 (columna 0)
 		mov 	x2,#169
-		mov	x4,#8	
 		mov	x5,x14
 			
 		subs	xzr,x5,#10
@@ -380,21 +384,6 @@ miMain: // X0 pixels
 		//guardar x18,x25
 		//se que tengo 1152000 pixels en una fila de 10 imagenes
 		// x5=contador_colum,x4=contador_fila 
-		
-		
-
-		//para no pasarme de derecha a izquierda
-		//cmp	x3,#271
-		//b.lt	no_pasar_por_izq
-
-		//sub	x11,x11,#16
-		//sub	x3,x3,#16 			//AGREGADDOOOOOOOOOO
-		
-		//b	no_pasar
-		
-		//no_pasar_por_izq:
-
-
 
 		//no pasarme de izq a derecha
 
@@ -404,6 +393,8 @@ miMain: // X0 pixels
 		add	x27,x27,#16
 		add	x3,x3,#16 			//AGREGADDOOOOOOOOOO
 		mov	x13,#0				//lo seteo en cero
+		mov	x12,#1
+		
 		no_pasar_para_bala:
 
 		//actualizar el puntero de mi ventana
@@ -419,8 +410,6 @@ miMain: // X0 pixels
 		ldr     x2, [x1, #0]    // x2 Ancho de mi imagen ->x2=48
 		ldr     x3, [x1, #8]    // x3 Alto de mi imagen	 ->x3=60
 
-		
-		//mov	x24,#48		//HASTA LA COLUMNA 48
 		add     x1, x1, #16	//actualizo mi puntareo de arreglo de mi imagen ya que ya no necesito obtener el ancho y el alto
 		
 		mov 	x22,x0
