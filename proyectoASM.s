@@ -5,7 +5,8 @@
 .extern printf
 //.extern convertida
 
-miMain: // X0 pixels
+miMain: // X0 pixels	
+		mov	x14,#0
 		mov 	x16,#0
 		mov	x13,#0		//bandera bala
 		mov 	x6,#0
@@ -15,7 +16,7 @@ miMain: // X0 pixels
 		mov	x15, x1	     	//  BackUp config
 
       	        mov x11, 0x07f 		//la columna en la que empiezo por defecto
-       		mov x12, 0xfff		
+       		//mov x12, 0xfff		
 	
 		mov x8,#120		// la fila en la que empiezo por defecto
 		mov x9,#1		//COLOCO EL CONTADOR DEL MARCO
@@ -34,15 +35,13 @@ miMain: // X0 pixels
 		add	x1, x1, :lo12:last
 		mov     x3, x11		       		//x3=0xfff (columna fff)
 		mov 	x2,x8	      	      		//inicia a dibujar en la fila x2
-		//*********
-		//mov	x26,x2		
-		//*********
-		subs  	xzr,x16,#0		//si x16 es diferente de cero implica que alguien apreto un boton
+
+		subs  	xzr,x16,#0			//si x16 es diferente de cero implica que alguien apreto un boton
 		bne	botones
 
 		cmp	x5,#9
 		b.le	aparicion
-		mov	x5,#0			//si le coloco 9 implica que voy a tener esprando el cuadro 9
+		mov	x5,#0				//si le coloco 9 implica que voy a tener esprando el cuadro 9
 		b	aparicion
 		botones:
 
@@ -50,7 +49,7 @@ miMain: // X0 pixels
 		bne	volver_fila
 		mov	x16,#0
 		volver_fila:
-		mov	x5,x16			//numero de imagen	
+		mov	x5,x16				//numero de imagen	
 		aparicion:
 
 
@@ -62,6 +61,10 @@ miMain: // X0 pixels
 
 		bl	draw_image
 		add	x5,x5,#1		//avanzo hacia la siguiente imagen de  la misma filas
+
+		
+		mov     x0, x10	
+		bl	draw_villano
 		
 		subs	xzr,x13,#0
 		beq	no_disparo
@@ -77,6 +80,9 @@ miMain: // X0 pixels
 		sub	x27,x27,#16		//se desplaza de a 12 columnas de pixels hacia la izq
 		
 		no_disparo:
+
+
+		
 				
 		
 		//me muevo hacia la izquierda
@@ -146,7 +152,45 @@ miMain: // X0 pixels
 		mov     w7, #0
 		strb	w7,[x15, #8]
 		b	loop2
+	
+
+
+	draw_villano:
+		sub     sp, sp ,48
+		str     x29,[sp, 40]
+		str     x30,[sp, 32]
+		str     x2,[sp, 24]
+		str     x3,[sp, 16]
+		str     x4,[sp, 8]
+		str     x5,[sp, 0]
+	
+
+		//dibujar villano
 		
+		mov     x3,#3		       		//x3=0x000 (columna 0)
+		mov 	x2,#169
+		mov	x4,#8	
+		mov	x5,x14
+			
+		subs	xzr,x5,#10
+		bne	volver_fila_villano
+		mov	x5,#0
+		volver_fila_villano:
+		bl	draw_image
+		add	x5,x5,#1
+		mov	x14,x5
+
+		ldr     x5,[sp, 0]
+        	ldr     x4,[sp, 8]
+        	ldr     x3,[sp, 16]
+        	ldr     x2,[sp, 24]
+        	ldr     x30,[sp, 32]
+        	ldr     x29,[sp, 40]
+       		add     sp, sp ,48
+		ret
+
+
+	
 		
 	pintar_pantalla_color:
 		sub     sp, sp ,48
