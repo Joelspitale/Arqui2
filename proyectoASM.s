@@ -22,8 +22,6 @@ miMain: // X0 pixels
 	loop2:	
 		//  Pinto pantalla de color
 		mov     x0, x10
-		//movz    w1,0xffff
-		//movk	w1, 0xffff, lsl 16	// w1 = color = 0xffffffff
 		adrp	x1, Contorno	        //Variable megaman
 		add	x1, x1, :lo12:Contorno
       		bl      pintar_pantalla_color
@@ -37,7 +35,7 @@ miMain: // X0 pixels
 		mov     x3, x11		       		//x3=0xfff (columna fff)
 		mov 	x2,x8	      	      		//inicia a dibujar en la fila x2
 		//*********
-		mov	x26,x2		
+		//mov	x26,x2		
 		//*********
 		subs  	xzr,x16,#0		//si x16 es diferente de cero implica que alguien apreto un boton
 		bne	botones
@@ -54,21 +52,31 @@ miMain: // X0 pixels
 		volver_fila:
 		mov	x5,x16			//numero de imagen	
 		aparicion:
+
+
+		subs	xzr,x13,#1
+		bne	copiar_primera_vez		
+		sub	x27,x3,#48		//copia un ancho menos para dibujar mi bala
+		mov	x26,x2			//copio la fila de mi columna
+		copiar_primera_vez:
+
 		bl	draw_image
-		add	x5,x5,#1		//avanzo hacia la siguiente imagen de  la misma fila
-		
-		//*****************************************************************
+		add	x5,x5,#1		//avanzo hacia la siguiente imagen de  la misma filas
 		
 		subs	xzr,x13,#0
 		beq	no_disparo
-		adrp	x1, bala	        	//Variable megaman
+		adrp	x1, bala	        //Variable megaman
 		add	x1, x1, :lo12:bala
-		mov     x3, x14		       		//x3=columna anterior
-		mov	x2,x26
-		
+		mov     x0, x10			//restauro el puntero de mi arreglo de pixeles de mi pantalla
+		mov	x3,x27			//columna nueva de la bala
+		mov	x2,x26			//fila de bala
+
+		add	x13,x13,#1		//(POR AHORA ESTA AL VICIO)		
 		bl	dibujar_bala
+		
+		sub	x27,x27,#16		//se desplaza de a 12 columnas de pixels hacia la izq
+		
 		no_disparo:
-		//*****************************************************************
 				
 		
 		//me muevo hacia la izquierda
@@ -117,23 +125,11 @@ miMain: // X0 pixels
        		b.ne	dormir
 		mov	x4,#4		//Faltaria hacer una imagen donde este parado y disparando
 		add	x6,x16,#1	//no falta aumentar el x11 ya que no me desplazo en la pantalla
-		
-		//*****************************************************************
 
-		add	x13,x13,#1		//bandera para que aparezca la bala
-		//cmp	x13,#2
-		//b.lt	disminuir_columna
-		//subs	xzr,x13,#1
-		//bne	disminuir_columna		
-		//sub	x14,x11,#48
-		//mov	x14,x11
-		//cada estoy haciendo que cada vez que aprete la bala se mueva
-		//disminuir_columna:
-		//sub	x14,x14,#16
-		mov	x14,x11
+		mov 	x13,#1
 		
 
-		//*****************************************************************
+		
 		
 		dormir://sino apreta ninguna tecla entonces esta durmiendo
 		mov	x16,#0
@@ -337,39 +333,68 @@ miMain: // X0 pixels
 		str     x5,[sp, 16]
 		str     x6,[sp, 8]
 		str     x7,[sp, 0]
+		//guardar x18,x25
+		//se que tengo 1152000 pixels en una fila de 10 imagenes
+		// x5=contador_colum,x4=contador_fila 
 		
+		
+
+		//para no pasarme de derecha a izquierda
+		//cmp	x3,#271
+		//b.lt	no_pasar_por_izq
+
+		//sub	x11,x11,#16
+		//sub	x3,x3,#16 			//AGREGADDOOOOOOOOOO
+		
+		//b	no_pasar
+		
+		//no_pasar_por_izq:
+
+
+
+		//no pasarme de izq a derecha
+
+		cmp	x3,#1
+		b.gt	no_pasar_para_bala
+		
+		add	x27,x27,#16
+		add	x3,x3,#16 			//AGREGADDOOOOOOOOOO
+		mov	x13,#0				//lo seteo en cero
+		no_pasar_para_bala:
 
 		//actualizar el puntero de mi ventana
-		//movz    x4, #1280	// 320 x 4= obtengo los bytes de una fila
-		//mul     x2, x2, x4  	//x2=numero de fila *(1280) = me posiciono en la fila que coloco la imagen
-		//add	x0, x0, x2	//me posiciono en la fila de abajo
-		//lsl     x3, x3, #2  	// x3=oxfff0 
-		//add     x0, x0, x3  	// x0=me posicion en la columna y fila de la pantalla a donde voy a dibujar (add x0, x2, lsl x3,x3,#2)
+
+		movz    x4, #1280	// 320 x 4= obtengo los bytes de una fila
+		mul     x2, x2, x4  	//x2=10*(1280) = me posiciono en la fila que coloco la imagen
+		add	x0, x0, x2	//me posiciono en la fila de abajo
+		lsl     x3, x3, #2  	// x3=oxfff0 
+		add     x0, x0, x3  	// x0=me posicion en la columna y fila de la pantalla a donde voy a dibujar (add x0, x2, lsl x3,x3,#2)
+
+
 		
-		subs	x0,x0,#192	//coloco la bala un marco antes
+		ldr     x2, [x1, #0]    // x2 Ancho de mi imagen ->x2=48
+		ldr     x3, [x1, #8]    // x3 Alto de mi imagen	 ->x3=60
+
 		
-	
-		ldr     x2, [x1, #0]    // x2 Ancho de mi imagen ->x2=48, no me sirve mucho el ancho
-		ldr     x3, [x1, #8]    // x3 Alto de mi imagen	   x3=60
+		//mov	x24,#48		//HASTA LA COLUMNA 48
 		add     x1, x1, #16	//actualizo mi puntareo de arreglo de mi imagen ya que ya no necesito obtener el ancho y el alto
-
-
+		
+		mov 	x22,x0
+		mov	x20,x1		//lo guardo para conservar la inicio del arreglo de mi imagen
+		
 		mov	x4, #0		// Cont Filas de imagen
 		mov	x5, #0		// Cont Columnas de imagen
 
-		mov	x22,x0
-		mov	x20,x1
-		
-		
-	 dibujar_fila_bala:
-		
+	 ciclo_draw_bala:
+
+		//dibujo la columnas primero
 		
 		ldr     w6, [x1,#0]		// cargo los 4 bytes directamente
 		lsr     w7, w6, #24       	// 0xff aabbcc
         	cmp     w7, 0xff          	//  ( Red * A + Pix *(256-A) ) / 256
-        	b.lt    no_dibujar_contorno_bala
+        	b.lt    no_dibujar_bala
 		str	w6, [x0, #0]		// dibujo el pixeles de mi imagen en la ventana
-		no_dibujar_contorno_bala:
+		no_dibujar_bala:
 
 			
 		add     x0, x0, #4      	// Muevo direccion del pixel de pantalla
@@ -377,7 +402,7 @@ miMain: // X0 pixels
 		add     x5, x5, #1      	// Incremento en uno la columna
 		
 		cmp	x5,x2
-		b.lt    dibujar_fila_bala  	// me aseguro de no desbordar y pasar a la fila de abajo de mi pantalla a donde dibujo
+		b.lt    ciclo_draw_bala  	// me aseguro de no desbordar y pasar a la fila de abajo de mi pantalla a donde dibujo
 		
 		mov	x5, #0		// setear contador columna 
 		
@@ -386,15 +411,16 @@ miMain: // X0 pixels
 		sub     x0, x0, x6	// ancho de pantalla -ancho de mi imagen= 1 columna de la fila de abajo
 
 		
-		add     x4, x4, #1		// Aumento mi contador de fila
-		cmp     x4, x3 			// verifico si me mi contador de fila es igual al tamaño de la fila de mi imagen
-		b.lt    dibujar_fila_bala 	// dibujo la fila en la que estoy 
+		
+		add     x4, x4, #1	// Aumento mi contador de fila
+		cmp     x4, x3 		// verifico si me mi contador de fila es igual al tamaño de la fila de mi imagen
+		b.lt    ciclo_draw_bala   // dibujo la fila en la que estoy 
 
-
-		mov	x0,x22
 		mov	x1,x20
-
-
+		mov	x0,x22
+			
+		
+		//ACA TENGO QUE GUARDAR EN memoria_aux el desde y hasta de lo que pinte ahora
 
 		ldr     x7,[sp, 0]
 		ldr     x6,[sp, 8]
@@ -404,6 +430,13 @@ miMain: // X0 pixels
 		ldr     x29,[sp, 40]
 		add     sp, sp ,48
 		ret
+
+
+
+
+
+
+		
 		
 
 memoria_aux:
